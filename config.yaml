@@ -1,0 +1,43 @@
+# C2 IOC 配置文件
+
+# 排除列表 - 不想合并的数据源
+exclude_list: []
+# 示例：排除特定数据源
+# exclude_list:
+#   - SNORT
+#   - ipsum
+#   - greensnow
+
+# AlienVault OTX API配置
+alienvault:
+  api_key: "866c385a80b2ddadbc39a85279836b1e837ac54147cd41bb1a9da1c194f4dc84"
+  days: 7  # 获取最近几天的数据
+  max_pages: 200  # 最多翻多少页
+
+# 数据保留策略
+data_retention:
+  source_data_days: 7  # 各数据源data目录保留天数（默认7天）
+  recent_months: 3     # recent.csv保留月数（默认3个月）
+  # history.csv保存所有历史数据，不自动删除
+
+# 其他可选配置
+output:
+  combine_dir: "Public_IOC/combine"
+  date_format: "%Y-%m-%d"
+
+# 数据源优先级（可选，用于未来扩展）
+source_priority:
+  high:
+    - alienvault
+    - NamePipes
+    - urlhaus
+    - C2IntelFeeds
+  medium:
+    - Montysecurity
+    - threatview.io
+    - ThreatFox
+  low:
+    - ipsum
+    - greensnow
+    - cinsscore
+
