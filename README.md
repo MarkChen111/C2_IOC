@@ -56,17 +56,45 @@ C2_IOC/
 
 ## 使用方法
 
-### 1. 单独运行某个数据源
+### 🚀 快速开始
+
+```bash
+# 1. 安装依赖
+pip3 install --break-system-packages requests pyyaml
+
+# 2. 配置API密钥（如果需要）
+vim config.yaml
+
+# 3. 运行每日自动更新
+python3 run_daily_update.py
+
+# 4. 查看结果
+head -20 Public_IOC/combine/recent_high_risk_ips.csv | column -t -s $'\t'
+```
+
+### 1. 自动更新（推荐）
+
+使用主控脚本自动采集所有数据源并合并：
+
+```bash
+# 运行每日更新（会依次运行所有16个数据源，然后自动合并）
+python3 run_daily_update.py
+
+# 查看运行日志
+tail -f logs/ioc_collection.log
+```
+
+### 2. 单独运行某个数据源
 
 进入对应目录运行采集脚本：
 
 ```bash
 # 示例：采集URLhaus数据
 cd Public_IOC/urlhaus
-python code.py
+python3 code.py
 ```
 
-### 2. 合并所有数据源
+### 3. 手动合并数据
 
 运行合并脚本：
 
@@ -75,7 +103,7 @@ cd Public_IOC/combine
 python3 combine.py
 ```
 
-### 3. 配置管理
+### 4. 配置管理
 
 编辑项目根目录的 `config.yaml`：
 
@@ -90,6 +118,20 @@ alienvault:
   api_key: "your_api_key_here"
   days: 7
   max_pages: 200
+
+# 数据保留策略
+data_retention:
+  source_data_days: 7   # 数据源文件保留天数
+  recent_months: 3      # recent.csv保留月数
+```
+
+### 5. 设置定时任务
+
+每天自动运行：
+
+```bash
+# 使用crontab（每天凌晨2点）
+(crontab -l 2>/dev/null; echo "0 2 * * * cd /path/to/C2_IOC && /usr/bin/python3 run_daily_update.py >> logs/daily_\$(date +\%Y\%m\%d).log 2>&1") | crontab -
 ```
 
 ## 数据格式
