@@ -196,30 +196,82 @@ data_retention:
 
 ## 注意事项
 
-1. **API密钥**: AlienVault OTX需要API密钥，请在 `Public_IOC/alienvault/code.py` 中配置
-2. **请求频率**: 部分数据源可能有请求频率限制，建议适当设置延迟
-3. **数据更新**: 建议每天运行一次采集脚本更新数据
-4. **存储空间**: 合并后的数据可能较大，请确保有足够的磁盘空间
+1. **依赖安装**: 需要安装 `requests` 和 `pyyaml`
+   ```bash
+   pip3 install --break-system-packages requests pyyaml
+   ```
 
-## 示例
+2. **API密钥**: AlienVault OTX需要API密钥，请在 `config.yaml` 中配置
 
-### 查看合并数据
+3. **请求频率**: 部分数据源可能有请求频率限制，`run_daily_update.py` 已内置1秒延迟
+
+4. **数据更新**: 建议每天运行一次，可使用crontab设置定时任务
+
+5. **存储空间**: 
+   - history.csv: ~8MB（持续增长）
+   - recent.csv: ~6MB（固定大小）
+   - recent_high_risk_ips.csv: ~775KB（固定大小）
+   - 日志文件会持续增长，建议定期清理
+
+6. **数据质量**: 
+   - 优先使用 `recent_high_risk_ips.csv`（多源验证，误报率低）
+   - count越高的IP可信度越高
+   - 建议配合其他安全工具综合判断
+
+## 使用示例
+
+### 查看高危IP数据
 
 ```bash
-# 查看前10条记录
-head -n 11 Public_IOC/combine/2025-12-10.csv | column -t -s $'\t'
+# 查看高危IP（前10条）
+head -11 Public_IOC/combine/recent_high_risk_ips.csv | column -t -s $'\t'
+
+# 统计不同威胁级别的IP数量
+cut -f7 Public_IOC/combine/recent_high_risk_ips.csv | grep -v "count" | sort | uniq -c
+
+# 查找极高危IP（count >= 5）
+awk -F'\t' '$7 >= 5' Public_IOC/combine/recent_high_risk_ips.csv
 ```
 
-### 统计高频IP
+### 查询特定IP
 
 ```bash
-# 统计count>3的高可信度IP
-awk -F'\t' '$6 > 3 {print $0}' Public_IOC/combine/2025-12-10.csv | wc -l
+# 查询某个IP是否在高危列表中
+grep "1.2.3.4" Public_IOC/combine/recent_high_risk_ips.csv
+
+# 查询包含特定标签的IP
+grep -i "cobalt" Public_IOC/combine/recent_high_risk_ips.csv
 ```
 
-### 按数据源过滤
+### 导出为防火墙规则
 
-编辑 `controller.py` 中的 `EXCLUDE_LIST` 来排除不需要的数据源。
+```bash
+# 提取所有高危IP地址
+cut -f1 Public_IOC/combine/recent_high_risk_ips.csv | grep -v "ip" > high_risk_ips.txt
+
+# 应用到iptables
+while read ip; do 
+    iptables -A INPUT -s $ip -j DROP
+done < high_risk_ips.txt
+
+# 应用到firewalld
+while read ip; do 
+    firewall-cmd --add-rich-rule="rule family='ipv4' source address='$ip' reject"
+done < high_risk_ips.txt
+```
+
+### 威胁分析
+
+```bash
+# 统计各威胁类型数量
+cut -f3 Public_IOC/combine/recent_high_risk_ips.csv | tr '|' '\n' | sort | uniq -c | sort -rn
+
+# 统计各数据源贡献
+cut -f4 Public_IOC/combine/recent_high_risk_ips.csv | tr '|' '\n' | sort | uniq -c | sort -rn
+
+# 按时间统计（最近发现的威胁）
+cut -f5 Public_IOC/combine/recent_high_risk_ips.csv | grep -v "first_seen" | sort | uniq -c
+```
 
 ## 许可
 
@@ -227,8 +279,26 @@ awk -F'\t' '$6 > 3 {print $0}' Public_IOC/combine/2025-12-10.csv | wc -l
 
 ## 更新日志
 
-- 2025-12-10: 初始版本，支持16个数据源
-- 统一数据格式和字段命名
-- 支持数据源排除功能
-- 添加IP出现次数统计
+### 2025-12-10
+
+**v1.0 初始版本**
+- ✅ 集成16个公开威胁情报源
+- ✅ 统一数据格式（\t分隔，小写IP，标准时间格式）
+- ✅ 智能字段映射和数据标准化
+- ✅ 支持数据源排除功能（config.yaml）
+- ✅ IP多源验证统计（count字段）
+- ✅ 自动数据清理（保留策略可配置）
+
+**v1.1 功能增强**
+- ✅ 添加 `run_daily_update.py` 主控脚本
+- ✅ 集成日志系统（logs/ioc_collection.log）
+- ✅ 新增 `recent_high_risk_ips.csv` 高危IP专用文件
+- ✅ 优化时间过滤逻辑（3个月数据保留）
+- ✅ 支持定时任务自动化运行
+
+**数据统计**
+- 总数据源: 16个（优质8个 + 一般8个）
+- 历史记录: ~156,000条
+- 最近3个月: ~128,000条
+- 高危IP: ~12,000条（count≥3）
 

@@ -7,7 +7,9 @@ from datetime import datetime
 # 1. 基本配置
 # =========================
 BINARYDEFENSE_URL = "https://www.binarydefense.com/banlist.txt"
-SAVE_DIR = "Public_IOC/Binarydefense/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 
 # 创建目录（如果不存在）
 os.makedirs(SAVE_DIR, exist_ok=True)

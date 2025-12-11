@@ -7,7 +7,9 @@ from datetime import datetime
 # 1. 基本配置
 # =========================
 CYBERCURE_URL = "https://api.cybercure.ai/feed/get_ips?type=csv"
-SAVE_DIR = "Public_IOC/CyberCure/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 TEMP_FILE = "temp_cybercure.csv"
 
 # 创建目录（如果不存在）

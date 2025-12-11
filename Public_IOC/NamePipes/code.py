@@ -7,7 +7,9 @@ from datetime import datetime
 # 1. 基本配置
 # =========================
 THREATFOX_CSV_URL = "https://raw.githubusercontent.com/mthcht/awesome-lists/main/Lists/IP/Threatfox/threatfox_ip_ports_list.csv"
-SAVE_DIR = "Public_IOC/NamePipes/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 TEMP_FILE = "temp_threatfox.csv"
 
 # 创建目录（如果不存在）

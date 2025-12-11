@@ -41,7 +41,11 @@ CONFIG = load_config()
 # 基础配置
 # =========================
 
-API_KEY = CONFIG.get('api_key', "866c385a80b2ddadbc39a85279836b1e837ac54147cd41bb1a9da1c194f4dc84")
+API_KEY = CONFIG.get('api_key')
+if not API_KEY:
+    print("[!] 错误: 未配置 AlienVault API Key！")
+    print("[!] 请在 config.yaml 中配置 alienvault.api_key")
+    sys.exit(1)
 
 # 近几天的数据
 DAYS = CONFIG.get('days', 7)

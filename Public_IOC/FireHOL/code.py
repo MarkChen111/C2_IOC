@@ -8,7 +8,9 @@ from datetime import datetime
 # 1. 基本配置
 # =========================
 FIREHOL_URL = "https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/firehol_level3.netset"
-SAVE_DIR = "Public_IOC/FireHOL/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 
 # 创建目录（如果不存在）
 os.makedirs(SAVE_DIR, exist_ok=True)

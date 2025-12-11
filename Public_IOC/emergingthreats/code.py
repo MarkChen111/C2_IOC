@@ -7,7 +7,9 @@ from datetime import datetime
 # 1. 基本配置
 # =========================
 EMERGINGTHREATS_URL = "https://rules.emergingthreats.net/blockrules/compromised-ips.txt"
-SAVE_DIR = "Public_IOC/emergingthreats/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 
 # 创建目录（如果不存在）
 os.makedirs(SAVE_DIR, exist_ok=True)

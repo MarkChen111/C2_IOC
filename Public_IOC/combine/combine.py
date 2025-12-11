@@ -413,7 +413,9 @@ def main():
                 ip = row.get("ip", "").strip()
                 port = row.get("port", "").strip()
                 first_seen = row.get("first_seen_utc", "").strip()
-                crawl_date = row.get("crawl_date", "").strip()
+                # 兼容旧字段名
+                first_crawl = row.get("first_crawl_date", row.get("crawl_date", "")).strip()
+                last_seen = row.get("last_seen_date", "").strip()
                 
                 key = (ip, port)
                 if key not in all_history_data:
@@ -421,7 +423,8 @@ def main():
                         "tags": set(row.get("tag", "").split("|")) if row.get("tag") else set(),
                         "sources": set(row.get("ioc_source", "").split("|")) if row.get("ioc_source") else set(),
                         "first_seen": first_seen,
-                        "crawl_date": crawl_date
+                        "first_crawl_date": first_crawl,
+                        "last_seen_date": last_seen or first_crawl  # 如果没有last_seen，使用first_crawl
                     }
                     # 移除空字符串
                     all_history_data[key]["tags"].discard("")
@@ -429,107 +432,123 @@ def main():
     
     print(f"[+] 历史数据: {len(all_history_data)} 条")
     
-    # 合并新数据到历史数据
-    print(f"[+] 合并新数据到历史数据...")
+    # 合并新数据到历史数据（累积式）
+    print(f"[+] 合并新数据到历史数据（累积模式）...")
     for (ip, port), stats in ip_stats.items():
         key = (ip, port)
         if key in all_history_data:
-            # 合并标签和来源
+            # ✅ 累积模式：只增不减
+            # 合并标签和来源（历史上所有出现过的）
             all_history_data[key]["tags"].update(stats["tags"])
             all_history_data[key]["sources"].update(stats["sources"])
-            # 更新爬取日期为最新
-            all_history_data[key]["crawl_date"] = CRAWL_DATE
-            # 如果新数据有first_seen且旧数据没有，或新数据的first_seen更早
+            
+            # 更新最后发现日期为今天
+            all_history_data[key]["last_seen_date"] = CRAWL_DATE
+            
+            # 保持首次爬取日期不变（如果存在）
+            if not all_history_data[key].get("first_crawl_date"):
+                all_history_data[key]["first_crawl_date"] = CRAWL_DATE
+            
+            # 更新首次发现时间（选最早的）
             if stats["first_seen"]:
                 if not all_history_data[key]["first_seen"] or stats["first_seen"] < all_history_data[key]["first_seen"]:
                     all_history_data[key]["first_seen"] = stats["first_seen"]
         else:
-            # 新数据
-            all_history_data[key] = stats
-            all_history_data[key]["crawl_date"] = CRAWL_DATE
+            # 新发现的IP
+            all_history_data[key] = {
+                "tags": stats["tags"],
+                "sources": stats["sources"],
+                "first_seen": stats["first_seen"],
+                "first_crawl_date": CRAWL_DATE,  # 首次爬取日期
+                "last_seen_date": CRAWL_DATE      # 最后发现日期
+            }
     
     print(f"[+] 合并后历史数据总数: {len(all_history_data)} 条")
     
     # =========================
-    # 写入history.csv（所有历史数据）
+    # 写入history.csv（所有历史数据 - 累积式）
     # =========================
-    print(f"[+] 写入 history.csv...")
+    print(f"[+] 写入 history.csv（累积模式：记录所有历史上标记过的IP）...")
     with open(history_csv_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "crawl_date", "count"])
+        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "first_crawl_date", "last_seen_date", "count"])
         
         for (ip, port), stats in sorted(all_history_data.items()):
             count = len(stats["sources"])
             tags = "|".join(sorted(stats["tags"])) if stats["tags"] else ""
             sources = "|".join(sorted(stats["sources"]))
             first_seen = stats.get("first_seen", "")
-            crawl_date = stats.get("crawl_date", CRAWL_DATE)
+            first_crawl = stats.get("first_crawl_date", "")
+            last_seen = stats.get("last_seen_date", "")
             
-            writer.writerow([ip, port, tags, sources, first_seen, crawl_date, count])
+            writer.writerow([ip, port, tags, sources, first_seen, first_crawl, last_seen, count])
     
     # =========================
-    # 写入recent.csv（最近N个月的数据）
+    # 写入recent.csv（最近N个月活跃的IP）
     # =========================
-    print(f"[+] 写入 recent.csv (最近{RECENT_MONTHS}个月)...")
+    print(f"[+] 写入 recent.csv（最近{RECENT_MONTHS}个月内出现过的IP）...")
     recent_count = 0
     with open(recent_csv_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "crawl_date", "count"])
+        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "first_crawl_date", "last_seen_date", "count"])
         
         for (ip, port), stats in sorted(all_history_data.items()):
-            # 过滤：first_seen_utc 和 crawl_date 都必须在最近N个月内（或为空）
-            crawl_date = stats.get("crawl_date", "")
-            first_seen = stats.get("first_seen", "")
+            # ✅ 新逻辑：只要 last_seen_date 在最近N个月内，就认为是活跃的
+            last_seen = stats.get("last_seen_date", "")
             
-            # 检查是否满足时间条件（两个都必须在范围内，如果字段存在的话）
-            is_recent = True  # 默认通过
-            
-            # 如果有first_seen_utc且早于N个月，则排除
-            if first_seen and first_seen < months_ago:
-                is_recent = False
-            
-            # 如果有crawl_date且早于N个月，则排除
-            if crawl_date and crawl_date < months_ago:
-                is_recent = False
+            # 判断是否最近活跃
+            is_recent = False
+            if last_seen and last_seen >= months_ago:
+                is_recent = True
+            elif not last_seen:
+                # 如果没有 last_seen_date，使用 first_crawl_date 判断
+                first_crawl = stats.get("first_crawl_date", "")
+                if first_crawl and first_crawl >= months_ago:
+                    is_recent = True
             
             if is_recent:
                 count = len(stats["sources"])
                 tags = "|".join(sorted(stats["tags"])) if stats["tags"] else ""
                 sources = "|".join(sorted(stats["sources"]))
+                first_seen = stats.get("first_seen", "")
+                first_crawl = stats.get("first_crawl_date", "")
                 
-                writer.writerow([ip, port, tags, sources, first_seen, crawl_date, count])
+                writer.writerow([ip, port, tags, sources, first_seen, first_crawl, last_seen, count])
                 recent_count += 1
     
     # =========================
-    # 写入recent_high_risk_ips.csv（高危IP，count >= 3）
+    # 写入recent_high_risk_ips.csv（高危IP，count >= 3 且最近活跃）
     # =========================
     high_risk_csv_file = os.path.join(OUTPUT_DIR, "recent_high_risk_ips.csv")
-    print(f"[+] 写入 recent_high_risk_ips.csv (count >= 3 的高危数据)...")
+    HIGH_RISK_THRESHOLD = 3
+    print(f"[+] 写入 recent_high_risk_ips.csv (count >= {HIGH_RISK_THRESHOLD} 且最近{RECENT_MONTHS}个月活跃)...")
     high_risk_count = 0
     
     with open(high_risk_csv_file, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "crawl_date", "count"])
+        writer.writerow(["ip", "port", "tag", "ioc_source", "first_seen_utc", "first_crawl_date", "last_seen_date", "count"])
         
         for (ip, port), stats in sorted(all_history_data.items()):
-            # 过滤：时间条件 + count >= 3
-            crawl_date = stats.get("crawl_date", "")
-            first_seen = stats.get("first_seen", "")
             count = len(stats["sources"])
+            last_seen = stats.get("last_seen_date", "")
             
-            # 检查时间条件
-            is_recent = True
-            if first_seen and first_seen < months_ago:
-                is_recent = False
-            if crawl_date and crawl_date < months_ago:
-                is_recent = False
+            # ✅ 判断是否最近活跃
+            is_recent = False
+            if last_seen and last_seen >= months_ago:
+                is_recent = True
+            elif not last_seen:
+                first_crawl = stats.get("first_crawl_date", "")
+                if first_crawl and first_crawl >= months_ago:
+                    is_recent = True
             
-            # 只保留最近的且count >= 3的数据
-            if is_recent and count >= 3:
+            # 只保留最近活跃且count >= 阈值的数据
+            if is_recent and count >= HIGH_RISK_THRESHOLD:
                 tags = "|".join(sorted(stats["tags"])) if stats["tags"] else ""
                 sources = "|".join(sorted(stats["sources"]))
+                first_seen = stats.get("first_seen", "")
+                first_crawl = stats.get("first_crawl_date", "")
                 
-                writer.writerow([ip, port, tags, sources, first_seen, crawl_date, count])
+                writer.writerow([ip, port, tags, sources, first_seen, first_crawl, last_seen, count])
                 high_risk_count += 1
     
     print(f"[+] 合并完成！")

@@ -9,7 +9,9 @@ from urllib.parse import urlparse
 # 1. 基本配置
 # =========================
 URLHAUS_CSV_URL = "https://urlhaus.abuse.ch/downloads/csv_online/"
-SAVE_DIR = "Public_IOC/urlhaus/data"
+# 获取脚本所在目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+SAVE_DIR = os.path.join(script_dir, "data")
 
 # 创建目录（如果不存在）
 os.makedirs(SAVE_DIR, exist_ok=True)

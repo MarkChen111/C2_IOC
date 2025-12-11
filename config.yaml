@@ -10,9 +10,10 @@ exclude_list: []
 
 # AlienVault OTX API配置
 alienvault:
-  api_key: "866c385a80b2ddadbc39a85279836b1e837ac54147cd41bb1a9da1c194f4dc84"
+  api_key: "866c385a80b2ddadbc39a85279836b1e837ac54147cd41bb1a9da1c194f4dc84"  # 请替换为您自己的API Key
   days: 7  # 获取最近几天的数据
   max_pages: 200  # 最多翻多少页
+  # 获取API Key: https://otx.alienvault.com/api
 
 # 数据保留策略
 data_retention:
