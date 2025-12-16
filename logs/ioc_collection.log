@@ -219,3 +219,31 @@
 [2025-12-15 20:43:07] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,023
 [2025-12-15 20:43:07] [INFO] [IOC_COLLECTOR]   threatfox: 984
 [2025-12-15 20:43:07] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-16 20:47:14] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 21952 条记录
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] 总记录数: 1,432,813
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] 唯一IP数: 186,239
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] 数据源数: 16
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] history.csv: 186,239 条
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] recent.csv: 186,239 条
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   CyberCure: 417,658
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   NamePipes: 364,576
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   FireHOL: 195,467
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   ipsum: 152,846
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   cinsscore: 105,000
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   urlhaus: 97,299
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   greensnow: 36,419
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   Montysecurity: 17,524
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   alienvault: 12,988
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   Binarydefense: 12,259
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   threatview.io: 7,714
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 4,593
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   emergingthreats: 3,206
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   SNORT: 3,143
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,137
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR]   threatfox: 984
+[2025-12-16 20:47:54] [INFO] [IOC_COLLECTOR] ============================================================
