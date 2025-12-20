@@ -330,3 +330,29 @@
 [2025-12-19 20:43:57] [INFO] [IOC_COLLECTOR]   SNORT: 1,569
 [2025-12-19 20:43:57] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,334
 [2025-12-19 20:43:57] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-20 20:42:50] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 20597 条记录
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] 总记录数: 1,838,732
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] 唯一IP数: 190,292
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] 数据源数: 14
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] history.csv: 204,085 条
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] recent.csv: 204,085 条
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   CyberCure: 547,875
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   NamePipes: 470,649
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   FireHOL: 252,105
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   ipsum: 192,075
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   cinsscore: 135,000
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   urlhaus: 119,573
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   greensnow: 42,890
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   Montysecurity: 22,958
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   Binarydefense: 19,681
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   alienvault: 13,513
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   threatview.io: 9,918
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 6,867
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   emergingthreats: 4,317
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,311
+[2025-12-20 20:43:32] [INFO] [IOC_COLLECTOR] ============================================================
