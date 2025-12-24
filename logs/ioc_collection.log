@@ -434,3 +434,29 @@
 [2025-12-23 21:00:05] [INFO] [IOC_COLLECTOR]   emergingthreats: 4,469
 [2025-12-23 21:00:05] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,230
 [2025-12-23 21:00:05] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-24 20:45:23] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 19783 条记录
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] 总记录数: 1,859,939
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] 唯一IP数: 192,429
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] 数据源数: 14
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] history.csv: 218,859 条
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] recent.csv: 218,859 条
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   CyberCure: 561,461
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   NamePipes: 470,239
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   FireHOL: 256,463
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   ipsum: 185,810
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   cinsscore: 135,000
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   urlhaus: 115,872
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   greensnow: 42,211
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   alienvault: 26,166
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   Montysecurity: 23,376
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   Binarydefense: 20,443
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   threatview.io: 9,918
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 7,199
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   emergingthreats: 4,515
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,266
+[2025-12-24 20:46:01] [INFO] [IOC_COLLECTOR] ============================================================
