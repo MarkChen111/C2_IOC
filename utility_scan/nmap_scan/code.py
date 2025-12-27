@@ -15,21 +15,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import time
 import logging
+import threading
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('nmap_scan.log'),
-        logging.StreamHandler()
-    ]
-)
+# 日志将在main函数中配置
 logger = logging.getLogger(__name__)
 
 
 class NmapScanner:
-    def __init__(self, input_csv, output_csv, max_workers=4):
+    def __init__(self, input_csv, output_csv, max_workers=4, batch_size=100):
         """
         初始化扫描器
         
@@ -37,12 +30,16 @@ class NmapScanner:
             input_csv: 输入CSV文件路径
             output_csv: 输出CSV文件路径
             max_workers: 并发扫描线程数
+            batch_size: 批量写入大小,每扫描多少个IP写入一次
         """
         self.input_csv = input_csv
         self.output_csv = output_csv
         self.max_workers = max_workers
+        self.batch_size = batch_size
         self.scanned_count = 0
         self.total_count = 0
+        self.results_buffer = []  # 结果缓冲区
+        self.buffer_lock = threading.Lock()  # 缓冲区锁
         
     def read_ips_from_csv(self):
         """
@@ -171,19 +168,31 @@ class NmapScanner:
         
         return ports
     
-    def save_result(self, ip, ports, scan_date):
+    def add_result_to_buffer(self, ip, ports, scan_date):
         """
-        保存单个扫描结果到CSV文件
+        将扫描结果添加到缓冲区
         
         Args:
             ip: IP地址
             ports: 端口列表
             scan_date: 扫描日期
         """
-        try:
-            # 将端口列表转换为逗号分隔的字符串
-            ports_str = ','.join(map(str, ports)) if ports else ''
+        with self.buffer_lock:
+            self.results_buffer.append((ip, ports, scan_date))
             
+            # 如果缓冲区达到批量大小,写入文件
+            if len(self.results_buffer) >= self.batch_size:
+                self.flush_buffer()
+    
+    def flush_buffer(self):
+        """
+        将缓冲区的结果批量写入CSV文件
+        注意: 调用此方法前应该已经获取了buffer_lock
+        """
+        if not self.results_buffer:
+            return
+        
+        try:
             # 追加写入CSV文件
             file_exists = os.path.exists(self.output_csv)
             
@@ -194,10 +203,16 @@ class NmapScanner:
                 if not file_exists:
                     writer.writerow(['ip', 'ports', 'scan_date'])
                 
-                writer.writerow([ip, ports_str, scan_date])
+                # 批量写入所有结果
+                for ip, ports, scan_date in self.results_buffer:
+                    ports_str = ','.join(map(str, ports)) if ports else ''
+                    writer.writerow([ip, ports_str, scan_date])
+            
+            logger.info(f"已批量写入 {len(self.results_buffer)} 条扫描结果到文件")
+            self.results_buffer.clear()
         
         except Exception as e:
-            logger.error(f"保存结果失败 {ip}: {e}")
+            logger.error(f"批量保存结果失败: {e}")
     
     def run(self):
         """
@@ -257,10 +272,14 @@ class NmapScanner:
                 ip = future_to_ip[future]
                 try:
                     result_ip, ports, result_scan_date = future.result()
-                    # 立即保存结果
-                    self.save_result(result_ip, ports, result_scan_date)
+                    # 添加到缓冲区(每100个自动写入)
+                    self.add_result_to_buffer(result_ip, ports, result_scan_date)
                 except Exception as e:
                     logger.error(f"处理 {ip} 的结果时出错: {e}")
+        
+        # 扫描完成后,写入剩余的结果
+        with self.buffer_lock:
+            self.flush_buffer()
         
         # 计算总耗时
         total_time = time.time() - start_time
@@ -282,6 +301,17 @@ def main():
     # 获取脚本所在目录
     script_dir = Path(__file__).parent
     
+    # 配置日志 - 保存到脚本所在目录
+    log_file = script_dir / 'nmap_scan.log'
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file, encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    
     # 设置输入输出文件路径
     input_csv = script_dir.parent.parent / 'Public_IOC' / 'all_res_combine' / 'recent_high_risk_ips.csv'
     
@@ -290,6 +320,8 @@ def main():
     data_dir.mkdir(exist_ok=True)
     
     output_csv = data_dir / 'scan_results.csv'
+    
+    logger.info(f"日志文件: {log_file}")
     
     # 检查输入文件是否存在
     if not input_csv.exists():
@@ -310,10 +342,12 @@ def main():
     
     # 创建扫描器并运行
     # max_workers=4: 4个并发线程,匹配你的4核CPU
+    # batch_size=100: 每扫描100个IP写入一次
     scanner = NmapScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        max_workers=4
+        max_workers=4,
+        batch_size=100
     )
     
     scanner.run()
