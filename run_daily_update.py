@@ -27,7 +27,7 @@ import glob
 # 项目根目录
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_IOC_DIR = os.path.join(PROJECT_ROOT, "Public_IOC")
-COMBINE_SCRIPT = os.path.join(PUBLIC_IOC_DIR, "combine", "combine.py")
+COMBINE_SCRIPT = os.path.join(PUBLIC_IOC_DIR, "all_res_combine", "combine.py")
 LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 # 确保日志目录存在
