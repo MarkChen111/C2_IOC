@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 高性能TCP SYN半开扫描脚本
-使用异步IO批量发送SYN包 + 异步嗅探响应
+使用多线程批量发送SYN包 + 持续嗅探响应
 按端口批次扫描: 先扫描所有IP的某个端口,再扫描下一个端口
 需要root权限运行
 """
@@ -15,8 +15,9 @@ from datetime import datetime
 import time
 import logging
 from collections import defaultdict
-import asyncio
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from scapy.all import IP, TCP, AsyncSniffer, send, conf
+import threading
 
 # 禁用scapy的详细输出
 conf.verb = 0
@@ -25,21 +26,21 @@ conf.verb = 0
 logger = logging.getLogger(__name__)
 
 
-class AsyncFastSYNScanner:
-    def __init__(self, input_csv, output_csv, concurrency=1000, batch_size=100, timeout=1.0):
+class ThreadedSYNScanner:
+    def __init__(self, input_csv, output_csv, max_workers=5000, batch_size=100, timeout=1.0):
         """
         初始化扫描器
         
         Args:
             input_csv: 输入CSV文件路径
             output_csv: 输出CSV文件路径 (最终结果: ip, ports_set)
-            concurrency: 异步发包并发数
+            max_workers: 线程池大小
             batch_size: 批量写入大小,每扫描多少个结果写入一次
             timeout: 等待响应超时时间(秒)
         """
         self.input_csv = input_csv
         self.output_csv = output_csv
-        self.concurrency = concurrency
+        self.max_workers = max_workers
         self.batch_size = batch_size
         self.timeout = timeout
         
@@ -49,13 +50,18 @@ class AsyncFastSYNScanner:
         self.scanned_count = 0
         self.total_count = 0
         self.results_buffer = []  # 结果缓冲区
-        self.buffer_lock = asyncio.Lock()  # 异步锁
+        self.buffer_lock = threading.Lock()  # 缓冲区锁
         
         # 常见端口列表 (1-65535)
         self.ports = list(range(1, 65536))
         
         # 响应收集
-        self.open_ports = set()  # 存储 (ip, port) 元组
+        self.current_port = None
+        self.current_open_ips = set()
+        self.response_lock = threading.Lock()
+        
+        # 嗅探器
+        self.sniffer = None
         
     def read_ips_from_csv(self):
         """
@@ -95,35 +101,21 @@ class AsyncFastSYNScanner:
                 if tcp_layer.flags == 0x12:
                     src_ip = ip_layer.src
                     src_port = tcp_layer.sport
-                    self.open_ports.add((src_ip, src_port))
+                    
+                    # 只记录当前正在扫描的端口
+                    if self.current_port and src_port == self.current_port:
+                        with self.response_lock:
+                            self.current_open_ips.add(src_ip)
         except Exception as e:
             pass
     
-    async def send_syn_async(self, ip, port, semaphore):
+    def send_syn(self, ip, port):
         """
-        异步发送单个SYN包
+        发送单个SYN包
         
         Args:
             ip: IP地址
             port: 端口号
-            semaphore: 信号量控制并发
-        """
-        async with semaphore:
-            try:
-                # 在线程池中执行发送操作
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(
-                    None,
-                    self._send_syn_sync,
-                    ip,
-                    port
-                )
-            except Exception as e:
-                pass
-    
-    def _send_syn_sync(self, ip, port):
-        """
-        同步发送SYN包
         """
         try:
             pkt = IP(dst=ip)/TCP(dport=port, flags='S', sport=12345)
@@ -131,7 +123,7 @@ class AsyncFastSYNScanner:
         except Exception as e:
             pass
     
-    async def add_result_to_buffer(self, ip, port):
+    def add_result_to_buffer(self, ip, port):
         """
         将扫描结果添加到缓冲区
         
@@ -139,14 +131,14 @@ class AsyncFastSYNScanner:
             ip: IP地址
             port: 端口号
         """
-        async with self.buffer_lock:
+        with self.buffer_lock:
             self.results_buffer.append((ip, port))
             
             # 如果缓冲区达到批量大小,写入文件
             if len(self.results_buffer) >= self.batch_size:
-                await self.flush_buffer()
+                self.flush_buffer()
     
-    async def flush_buffer(self):
+    def flush_buffer(self):
         """
         将缓冲区的结果批量写入临时CSV文件
         注意: 调用此方法前应该已经获取了buffer_lock
@@ -154,20 +146,6 @@ class AsyncFastSYNScanner:
         if not self.results_buffer:
             return
         
-        try:
-            # 在线程池中执行IO操作
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._flush_buffer_sync
-            )
-        except Exception as e:
-            logger.error(f"批量保存结果失败: {e}")
-    
-    def _flush_buffer_sync(self):
-        """
-        同步写入文件
-        """
         try:
             file_exists = os.path.exists(self.temp_results_file)
             
@@ -185,9 +163,9 @@ class AsyncFastSYNScanner:
         except Exception as e:
             logger.error(f"写入文件失败: {e}")
     
-    async def scan_port_batch(self, ips, port):
+    def scan_port_batch(self, ips, port):
         """
-        异步扫描所有IP的某个端口
+        扫描所有IP的某个端口
         
         Args:
             ips: IP列表
@@ -196,45 +174,37 @@ class AsyncFastSYNScanner:
         logger.info(f"开始扫描端口 {port} (共 {len(ips)} 个IP)")
         start_time = time.time()
         
-        # 清空之前的结果
-        self.open_ports.clear()
+        # 设置当前端口并清空结果
+        self.current_port = port
+        with self.response_lock:
+            self.current_open_ips.clear()
         
-        # 启动嗅探器
-        sniffer = AsyncSniffer(
-            filter="tcp[tcpflags] & tcp-syn != 0 and tcp[tcpflags] & tcp-ack != 0",
-            prn=self.packet_handler,
-            store=0
-        )
-        sniffer.start()
-        
-        # 等待嗅探器启动
-        await asyncio.sleep(0.5)
-        
-        # 创建信号量控制并发
-        semaphore = asyncio.Semaphore(self.concurrency)
-        
-        # 创建所有发送任务
-        tasks = [self.send_syn_async(ip, port, semaphore) for ip in ips]
-        
-        # 并发发送所有SYN包
-        await asyncio.gather(*tasks)
+        # 使用线程池并发发送SYN包
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # 提交所有发送任务
+            futures = [executor.submit(self.send_syn, ip, port) for ip in ips]
+            
+            # 等待所有任务完成
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as e:
+                    pass
         
         # 等待响应
-        logger.info(f"等待 {self.timeout} 秒收集响应...")
-        await asyncio.sleep(self.timeout)
-        
-        # 停止嗅探
-        sniffer.stop()
+        time.sleep(self.timeout)
         
         # 处理收集到的开放端口
-        open_count = 0
-        for ip, response_port in self.open_ports:
-            if response_port == port:
-                await self.add_result_to_buffer(ip, port)
-                open_count += 1
+        with self.response_lock:
+            open_ips = self.current_open_ips.copy()
         
+        for ip in open_ips:
+            self.add_result_to_buffer(ip, port)
+        
+        open_count = len(open_ips)
         self.scanned_count += len(ips)
         elapsed = time.time() - start_time
+        
         logger.info(f"端口 {port} 扫描完成 - 发现 {open_count} 个开放 - 耗时 {elapsed:.1f}秒 - "
                    f"进度: {self.scanned_count}/{self.total_count} ({self.scanned_count*100/self.total_count:.1f}%)")
     
@@ -281,15 +251,15 @@ class AsyncFastSYNScanner:
         except Exception as e:
             logger.error(f"合并结果失败: {e}")
     
-    async def run_async(self):
+    def run(self):
         """
-        异步执行扫描任务
+        执行扫描任务
         """
         logger.info("=" * 60)
-        logger.info("开始高性能TCP SYN半开扫描任务 (异步模式)")
+        logger.info("开始高性能TCP SYN半开扫描任务 (多线程模式)")
         logger.info(f"输入文件: {self.input_csv}")
         logger.info(f"输出文件: {self.output_csv}")
-        logger.info(f"并发数: {self.concurrency}")
+        logger.info(f"线程数: {self.max_workers}")
         logger.info(f"响应超时: {self.timeout}秒")
         logger.info("=" * 60)
         
@@ -311,13 +281,29 @@ class AsyncFastSYNScanner:
             os.remove(self.temp_results_file)
             logger.info("已删除旧的临时结果文件")
         
-        # 按端口批次扫描: 先扫描所有IP的端口1,再扫描端口2...
-        for port in self.ports:
-            await self.scan_port_batch(ips, port)
+        # 启动嗅探器 (只启动一次!)
+        logger.info("启动数据包嗅探器...")
+        self.sniffer = AsyncSniffer(
+            filter="tcp[tcpflags] & tcp-syn != 0 and tcp[tcpflags] & tcp-ack != 0",
+            prn=self.packet_handler,
+            store=0
+        )
+        self.sniffer.start()
+        time.sleep(1)  # 等待嗅探器启动
+        logger.info("嗅探器已启动")
+        
+        try:
+            # 按端口批次扫描: 先扫描所有IP的端口1,再扫描端口2...
+            for port in self.ports:
+                self.scan_port_batch(ips, port)
+        finally:
+            # 停止嗅探器
+            logger.info("停止嗅探器...")
+            self.sniffer.stop()
         
         # 扫描完成后,写入剩余的结果
-        async with self.buffer_lock:
-            await self.flush_buffer()
+        with self.buffer_lock:
+            self.flush_buffer()
         
         # 合并结果
         self.merge_results()
@@ -336,12 +322,6 @@ class AsyncFastSYNScanner:
             logger.info(f"平均速度: {self.scanned_count/total_time:.0f} 次/秒")
         logger.info(f"结果已保存到: {self.output_csv}")
         logger.info("=" * 60)
-    
-    def run(self):
-        """
-        运行扫描器 (同步入口)
-        """
-        asyncio.run(self.run_async())
 
 
 def main():
@@ -384,13 +364,13 @@ def main():
         sys.exit(1)
     
     # 创建扫描器并运行
-    # concurrency=10000: 10000个异步并发发包
-    # batch_size=1000: 每扫描1000个开放端口写入一次
-    # timeout=2.0: 等待响应2秒
-    scanner = AsyncFastSYNScanner(
+    # max_workers=5000: 5000个线程并发发包
+    # batch_size=100: 每扫描100个开放端口写入一次
+    # timeout=1.0: 等待响应1秒
+    scanner = ThreadedSYNScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        concurrency=1000,
+        max_workers=5000,
         batch_size=100,
         timeout=1.0
     )
