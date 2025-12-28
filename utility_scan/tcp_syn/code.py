@@ -1,42 +1,46 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-高性能TCP端口扫描脚本
-使用原始socket进行TCP连接扫描,大幅提高扫描速度
-为防止被目标IP禁用，按端口批次扫描: 先扫描所有IP的某个端口,再扫描下一个端口
+高性能TCP SYN半开扫描脚本
+使用异步IO + scapy实现真正的SYN扫描(不完成三次握手)
+按端口批次扫描: 先扫描所有IP的某个端口,再扫描下一个端口
+需要root权限运行
 """
 
 import csv
-import socket
 import os
 import sys
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
 from datetime import datetime
 import time
 import logging
-import threading
 from collections import defaultdict
+from scapy.all import IP, TCP, sr1, conf
+import threading
+
+# 禁用scapy的详细输出
+conf.verb = 0
 
 # 日志将在main函数中配置
 logger = logging.getLogger(__name__)
 
 
-class FastTCPScanner:
-    def __init__(self, input_csv, output_csv, max_workers=500, batch_size=100, timeout=1.0):
+class AsyncSYNScanner:
+    def __init__(self, input_csv, output_csv, concurrency=1000, batch_size=100, timeout=1.0):
         """
         初始化扫描器
         
         Args:
             input_csv: 输入CSV文件路径
             output_csv: 输出CSV文件路径 (最终结果: ip, ports_set)
-            max_workers: 并发扫描线程数 (建议500-1000)
+            concurrency: 并发扫描数量 (建议1000-5000)
             batch_size: 批量写入大小,每扫描多少个结果写入一次
             timeout: 单个端口连接超时时间(秒)
         """
         self.input_csv = input_csv
         self.output_csv = output_csv
-        self.max_workers = max_workers
+        self.concurrency = concurrency
         self.batch_size = batch_size
         self.timeout = timeout
         
@@ -75,9 +79,36 @@ class FastTCPScanner:
             logger.error(f"读取CSV文件失败: {e}")
             return []
     
-    def scan_port(self, ip, port):
+    async def syn_scan_port(self, ip, port, semaphore):
         """
-        扫描单个IP的单个端口
+        使用SYN半开扫描单个IP的单个端口
+        
+        Args:
+            ip: IP地址
+            port: 端口号
+            semaphore: 信号量,控制并发数
+            
+        Returns:
+            tuple: (ip, port) 如果端口开放, 否则返回 None
+        """
+        async with semaphore:
+            try:
+                # 在线程池中执行scapy的阻塞操作
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None, 
+                    self._syn_scan_sync, 
+                    ip, 
+                    port
+                )
+                return result
+            
+            except Exception as e:
+                return None
+    
+    def _syn_scan_sync(self, ip, port):
+        """
+        同步执行SYN扫描 (在线程池中调用)
         
         Args:
             ip: IP地址
@@ -87,19 +118,22 @@ class FastTCPScanner:
             tuple: (ip, port) 如果端口开放, 否则返回 None
         """
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(self.timeout)
-            result = sock.connect_ex((ip, port))
-            sock.close()
+            # 构造SYN包
+            syn_packet = IP(dst=ip)/TCP(dport=port, flags='S')
             
-            if result == 0:
-                return (ip, port)
+            # 发送SYN包并等待响应
+            response = sr1(syn_packet, timeout=self.timeout, verbose=0)
+            
+            # 如果收到SYN-ACK响应(flags=0x12),说明端口开放
+            if response and response.haslayer(TCP):
+                if response[TCP].flags == 0x12:  # SYN-ACK
+                    # 发送RST包关闭连接(半开扫描)
+                    rst_packet = IP(dst=ip)/TCP(dport=port, flags='R')
+                    sr1(rst_packet, timeout=0.5, verbose=0)
+                    return (ip, port)
+            
             return None
         
-        except socket.timeout:
-            return None
-        except socket.error:
-            return None
         except Exception as e:
             return None
     
@@ -147,9 +181,9 @@ class FastTCPScanner:
         except Exception as e:
             logger.error(f"批量保存结果失败: {e}")
     
-    def scan_port_batch(self, ips, port):
+    async def scan_port_batch(self, ips, port):
         """
-        扫描所有IP的某个端口
+        异步扫描所有IP的某个端口
         
         Args:
             ips: IP列表
@@ -159,25 +193,23 @@ class FastTCPScanner:
         start_time = time.time()
         open_count = 0
         
-        # 使用线程池并发扫描
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # 提交所有扫描任务
-            future_to_ip = {executor.submit(self.scan_port, ip, port): ip 
-                          for ip in ips}
+        # 创建信号量控制并发数
+        semaphore = asyncio.Semaphore(self.concurrency)
+        
+        # 创建所有扫描任务
+        tasks = [self.syn_scan_port(ip, port, semaphore) for ip in ips]
+        
+        # 并发执行所有任务
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # 处理结果
+        for result in results:
+            if result and not isinstance(result, Exception):
+                ip, port = result
+                self.add_result_to_buffer(ip, port)
+                open_count += 1
             
-            # 处理完成的任务
-            for future in as_completed(future_to_ip):
-                try:
-                    result = future.result()
-                    if result:  # 端口开放
-                        ip, port = result
-                        self.add_result_to_buffer(ip, port)
-                        open_count += 1
-                        self.scanned_count += 1
-                except Exception as e:
-                    pass
-                
-                self.scanned_count += 1
+            self.scanned_count += 1
         
         elapsed = time.time() - start_time
         logger.info(f"端口 {port} 扫描完成 - 发现 {open_count} 个开放 - 耗时 {elapsed:.1f}秒 - "
@@ -226,15 +258,15 @@ class FastTCPScanner:
         except Exception as e:
             logger.error(f"合并结果失败: {e}")
     
-    def run(self):
+    async def run_async(self):
         """
-        执行扫描任务
+        异步执行扫描任务
         """
         logger.info("=" * 60)
-        logger.info("开始高性能TCP端口扫描任务")
+        logger.info("开始高性能TCP SYN半开扫描任务")
         logger.info(f"输入文件: {self.input_csv}")
         logger.info(f"输出文件: {self.output_csv}")
-        logger.info(f"并发数: {self.max_workers}")
+        logger.info(f"并发数: {self.concurrency}")
         logger.info(f"超时时间: {self.timeout}秒")
         logger.info("=" * 60)
         
@@ -258,7 +290,7 @@ class FastTCPScanner:
         
         # 按端口批次扫描: 先扫描所有IP的端口1,再扫描端口2...
         for port in self.ports:
-            self.scan_port_batch(ips, port)
+            await self.scan_port_batch(ips, port)
         
         # 扫描完成后,写入剩余的结果
         with self.buffer_lock:
@@ -280,15 +312,29 @@ class FastTCPScanner:
         logger.info(f"平均速度: {self.scanned_count/total_time:.0f} 次/秒")
         logger.info(f"结果已保存到: {self.output_csv}")
         logger.info("=" * 60)
+    
+    def run(self):
+        """
+        运行扫描器 (同步入口)
+        """
+        # 运行异步任务
+        asyncio.run(self.run_async())
 
 
 def main():
     """主函数"""
+    # 检查是否有root权限
+    if os.geteuid() != 0:
+        print("错误: SYN扫描需要root权限")
+        print("请使用 sudo 运行此脚本:")
+        print(f"  sudo python3 {sys.argv[0]}")
+        sys.exit(1)
+    
     # 获取脚本所在目录
     script_dir = Path(__file__).parent
     
     # 配置日志 - 保存到脚本所在目录
-    log_file = script_dir / 'tcp_scan.log'
+    log_file = script_dir / 'tcp_syn_scan.log'
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -315,13 +361,13 @@ def main():
         sys.exit(1)
     
     # 创建扫描器并运行
-    # max_workers=500: 500个并发线程,大幅提高扫描速度
+    # concurrency=1000: 1000个并发任务,可根据网络情况调整
     # batch_size=100: 每扫描100个开放端口写入一次
     # timeout=1.0: 每个端口1秒超时
-    scanner = FastTCPScanner(
+    scanner = AsyncSYNScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        max_workers=500,
+        concurrency=1000,
         batch_size=100,
         timeout=1.0
     )
