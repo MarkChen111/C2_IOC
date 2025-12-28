@@ -391,7 +391,7 @@ def main():
         input_csv=str(input_csv),
         output_csv=str(output_csv),
         concurrency=1000,
-        batch_size=1000,
+        batch_size=100,
         timeout=1.0
     )
     
