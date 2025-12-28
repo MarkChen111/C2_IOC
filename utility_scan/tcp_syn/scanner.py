@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class FastSYNScanner:
-    def __init__(self, input_csv, output_csv, pps=1000, batch_size=1000, timeout=2.0):
+    def __init__(self, input_csv, output_csv, pps=5000, batch_size=1000, timeout=2.0):
         """
         初始化扫描器
         
