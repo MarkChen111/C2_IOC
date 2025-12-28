@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class AsyncFastSYNScanner:
-    def __init__(self, input_csv, output_csv, concurrency=1000, batch_size=1000, timeout=1.0):
+    def __init__(self, input_csv, output_csv, concurrency=1000, batch_size=100, timeout=1.0):
         """
         初始化扫描器
         
@@ -390,9 +390,9 @@ def main():
     scanner = AsyncFastSYNScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        concurrency=10000,
+        concurrency=1000,
         batch_size=1000,
-        timeout=2.0
+        timeout=1.0
     )
     
     scanner.run()
