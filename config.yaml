@@ -23,7 +23,6 @@ data_retention:
 
 # 其他可选配置
 output:
-  combine_dir: "Public_IOC/combine"
   date_format: "%Y-%m-%d"
 
 # 数据源优先级（可选，用于未来扩展）
@@ -33,12 +32,18 @@ source_priority:
     - NamePipes
     - urlhaus
     - C2IntelFeeds
+    - threatfox
+    - emergingthreats
   medium:
     - Montysecurity
     - threatview.io
-    - ThreatFox
+    - tweetfeed
+    - Binarydefense
+    - FireHOL
+    - CyberCure
   low:
     - ipsum
     - greensnow
     - cinsscore
+    - SNORT
 
