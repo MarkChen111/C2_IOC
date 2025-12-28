@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-高性能TCP SYN半开扫描脚本
-使用原始socket直接构造和发送TCP SYN包，性能极高
+超高性能异步TCP SYN扫描脚本
+使用asyncio + 原始socket实现，性能极致
 按端口批次扫描: 先扫描所有IP的某个端口,再扫描下一个端口
 需要root权限运行
 """
@@ -17,55 +17,48 @@ from collections import defaultdict
 import socket
 import struct
 import random
-from concurrent.futures import ThreadPoolExecutor
-import threading
+import asyncio
 
 # 日志将在main函数中配置
 logger = logging.getLogger(__name__)
 
 
-class RawSocketSYNScanner:
-    def __init__(self, input_csv, output_csv, send_workers=100, recv_workers=10, batch_size=100, timeout=2.0):
+class AsyncRawSocketScanner:
+    def __init__(self, input_csv, output_csv, concurrency=10000, batch_size=100, timeout=2.0):
         """
         初始化扫描器
         
         Args:
             input_csv: 输入CSV文件路径
-            output_csv: 输出CSV文件路径 (最终结果: ip, ports_set)
-            send_workers: 发送线程数
-            recv_workers: 接收线程数
+            output_csv: 输出CSV文件路径
+            concurrency: 异步并发数
             batch_size: 批量写入大小
             timeout: 等待响应超时时间(秒)
         """
         self.input_csv = input_csv
         self.output_csv = output_csv
-        self.send_workers = send_workers
-        self.recv_workers = recv_workers
+        self.concurrency = concurrency
         self.batch_size = batch_size
         self.timeout = timeout
         
-        # 中间结果文件 (ip, port)
+        # 中间结果文件
         self.temp_results_file = Path(output_csv).parent / 'temp_scan_results.csv'
         
         self.scanned_count = 0
         self.total_count = 0
         self.results_buffer = []
-        self.buffer_lock = threading.Lock()
         
-        # 端口列表 (1-65535)
+        # 端口列表
         self.ports = list(range(1, 65536))
         
         # 响应收集
         self.current_port = None
         self.current_open_ips = set()
-        self.response_lock = threading.Lock()
         
-        # 停止标志
-        self.stop_receiving = threading.Event()
-        
-        # 原始socket
+        # socket
         self.send_socket = None
         self.recv_socket = None
+        self.stop_receiving = False
         
     def read_ips_from_csv(self):
         """从CSV文件读取IP并去重"""
@@ -93,42 +86,30 @@ class RawSocketSYNScanner:
         return ~s & 0xffff
     
     def create_syn_packet(self, src_ip, dst_ip, dst_port):
-        """
-        创建TCP SYN包
-        
-        Args:
-            src_ip: 源IP地址
-            dst_ip: 目标IP地址
-            dst_port: 目标端口
-            
-        Returns:
-            bytes: 完整的IP+TCP数据包
-        """
+        """创建TCP SYN包"""
         # TCP头部
         src_port = random.randint(10000, 65535)
         seq = random.randint(0, 0xffffffff)
         ack_seq = 0
-        doff = 5  # 数据偏移 (TCP头部长度/4)
-        flags = 0x02  # SYN标志
+        doff = 5
+        flags = 0x02  # SYN
         window = socket.htons(5840)
         check = 0
         urg_ptr = 0
         
-        # TCP伪头部 (用于计算校验和)
+        # TCP伪头部
         src_addr = socket.inet_aton(src_ip)
         dst_addr = socket.inet_aton(dst_ip)
         placeholder = 0
         protocol = socket.IPPROTO_TCP
-        tcp_length = 20  # TCP头部长度
+        tcp_length = 20
         
         pseudo_header = struct.pack('!4s4sBBH', src_addr, dst_addr, placeholder, protocol, tcp_length)
         
-        # TCP头部
         tcp_header = struct.pack('!HHLLBBHHH',
                                 src_port, dst_port, seq, ack_seq,
                                 (doff << 4), flags, window, check, urg_ptr)
         
-        # 计算TCP校验和
         check = self.checksum(pseudo_header + tcp_header)
         tcp_header = struct.pack('!HHLLBBH',
                                 src_port, dst_port, seq, ack_seq,
@@ -138,7 +119,7 @@ class RawSocketSYNScanner:
         ip_ihl = 5
         ip_ver = 4
         ip_tos = 0
-        ip_tot_len = 20 + 20  # IP头部 + TCP头部
+        ip_tot_len = 40
         ip_id = random.randint(0, 65535)
         ip_frag_off = 0
         ip_ttl = 64
@@ -150,7 +131,6 @@ class RawSocketSYNScanner:
                                ip_ihl_ver, ip_tos, ip_tot_len, ip_id, ip_frag_off,
                                ip_ttl, ip_proto, ip_check, src_addr, dst_addr)
         
-        # 计算IP校验和
         ip_check = self.checksum(ip_header)
         ip_header = struct.pack('!BBHHHBB',
                                ip_ihl_ver, ip_tos, ip_tot_len, ip_id, ip_frag_off,
@@ -169,32 +149,38 @@ class RawSocketSYNScanner:
         except:
             return "127.0.0.1"
     
-    def send_syn(self, dst_ip, dst_port, src_ip):
-        """发送SYN包"""
+    async def send_syn(self, dst_ip, dst_port, src_ip):
+        """异步发送SYN包"""
         try:
             packet = self.create_syn_packet(src_ip, dst_ip, dst_port)
-            self.send_socket.sendto(packet, (dst_ip, 0))
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, self.send_socket.sendto, packet, (dst_ip, 0))
         except Exception as e:
             pass
     
-    def receive_responses(self):
-        """接收响应的线程"""
-        while not self.stop_receiving.is_set():
+    async def receive_responses(self):
+        """异步接收响应"""
+        loop = asyncio.get_event_loop()
+        
+        while not self.stop_receiving:
             try:
-                self.recv_socket.settimeout(0.1)
-                data, addr = self.recv_socket.recvfrom(65535)
+                # 在线程池中执行阻塞的recv操作
+                data, addr = await loop.run_in_executor(
+                    None,
+                    lambda: self.recv_socket.recvfrom(65535)
+                )
                 
-                # 解析IP头部
+                # 解析响应
                 if len(data) < 40:
                     continue
                 
+                # 解析IP头部
                 ip_header = data[0:20]
                 iph = struct.unpack('!BBHHHBBH4s4s', ip_header)
                 protocol = iph[6]
                 src_ip = socket.inet_ntoa(iph[8])
                 
-                # 只处理TCP包
-                if protocol != 6:
+                if protocol != 6:  # 只处理TCP
                     continue
                 
                 # 解析TCP头部
@@ -203,28 +189,33 @@ class RawSocketSYNScanner:
                 src_port = tcph[0]
                 flags = tcph[5]
                 
-                # 检查是否是SYN-ACK (flags & 0x12 == 0x12)
+                # 检查SYN-ACK
                 if (flags & 0x12) == 0x12:
                     if self.current_port and src_port == self.current_port:
-                        with self.response_lock:
-                            self.current_open_ips.add(src_ip)
+                        self.current_open_ips.add(src_ip)
             
-            except socket.timeout:
-                continue
             except Exception as e:
-                pass
+                await asyncio.sleep(0.001)
     
-    def add_result_to_buffer(self, ip, port):
-        """将扫描结果添加到缓冲区"""
-        with self.buffer_lock:
-            self.results_buffer.append((ip, port))
-            if len(self.results_buffer) >= self.batch_size:
-                self.flush_buffer()
+    async def add_result_to_buffer(self, ip, port):
+        """添加结果到缓冲区"""
+        self.results_buffer.append((ip, port))
+        if len(self.results_buffer) >= self.batch_size:
+            await self.flush_buffer()
     
-    def flush_buffer(self):
-        """批量写入临时CSV文件"""
+    async def flush_buffer(self):
+        """批量写入文件"""
         if not self.results_buffer:
             return
+        
+        try:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, self._flush_buffer_sync)
+        except Exception as e:
+            logger.error(f"写入文件失败: {e}")
+    
+    def _flush_buffer_sync(self):
+        """同步写入文件"""
         try:
             file_exists = os.path.exists(self.temp_results_file)
             with open(self.temp_results_file, 'a', encoding='utf-8', newline='') as f:
@@ -236,33 +227,35 @@ class RawSocketSYNScanner:
             logger.info(f"已批量写入 {len(self.results_buffer)} 条扫描结果")
             self.results_buffer.clear()
         except Exception as e:
-            logger.error(f"写入文件失败: {e}")
+            logger.error(f"写入失败: {e}")
     
-    def scan_port_batch(self, ips, port, src_ip):
-        """扫描所有IP的某个端口"""
+    async def scan_port_batch(self, ips, port, src_ip):
+        """异步扫描所有IP的某个端口"""
         logger.info(f"开始扫描端口 {port} (共 {len(ips)} 个IP)")
         start_time = time.time()
         
         # 设置当前端口并清空结果
         self.current_port = port
-        with self.response_lock:
-            self.current_open_ips.clear()
+        self.current_open_ips.clear()
         
-        # 使用线程池并发发送
-        with ThreadPoolExecutor(max_workers=self.send_workers) as executor:
-            futures = [executor.submit(self.send_syn, ip, port, src_ip) for ip in ips]
-            for future in futures:
-                future.result()
+        # 创建信号量控制并发
+        semaphore = asyncio.Semaphore(self.concurrency)
+        
+        async def send_with_semaphore(ip):
+            async with semaphore:
+                await self.send_syn(ip, port, src_ip)
+        
+        # 并发发送所有SYN包
+        tasks = [send_with_semaphore(ip) for ip in ips]
+        await asyncio.gather(*tasks)
         
         # 等待响应
-        time.sleep(self.timeout)
+        await asyncio.sleep(self.timeout)
         
         # 处理结果
-        with self.response_lock:
-            open_ips = self.current_open_ips.copy()
-        
+        open_ips = self.current_open_ips.copy()
         for ip in open_ips:
-            self.add_result_to_buffer(ip, port)
+            await self.add_result_to_buffer(ip, port)
         
         open_count = len(open_ips)
         self.scanned_count += len(ips)
@@ -303,14 +296,13 @@ class RawSocketSYNScanner:
         except Exception as e:
             logger.error(f"合并结果失败: {e}")
     
-    def run(self):
-        """执行扫描任务"""
+    async def run_async(self):
+        """异步执行扫描任务"""
         logger.info("=" * 60)
-        logger.info("开始高性能TCP SYN扫描 (原始socket)")
+        logger.info("开始超高性能异步TCP SYN扫描")
         logger.info(f"输入文件: {self.input_csv}")
         logger.info(f"输出文件: {self.output_csv}")
-        logger.info(f"发送线程: {self.send_workers}")
-        logger.info(f"接收线程: {self.recv_workers}")
+        logger.info(f"并发数: {self.concurrency}")
         logger.info("=" * 60)
         
         ips = self.read_ips_from_csv()
@@ -334,32 +326,33 @@ class RawSocketSYNScanner:
         try:
             self.send_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
             self.recv_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+            self.recv_socket.settimeout(0.1)
             logger.info("原始socket创建成功")
         except PermissionError:
             logger.error("需要root权限创建原始socket")
             return
         
-        # 启动接收线程
-        recv_threads = []
-        for _ in range(self.recv_workers):
-            t = threading.Thread(target=self.receive_responses, daemon=True)
-            t.start()
-            recv_threads.append(t)
-        logger.info(f"已启动 {self.recv_workers} 个接收线程")
+        # 启动接收任务
+        recv_task = asyncio.create_task(self.receive_responses())
+        logger.info("接收任务已启动")
         
         try:
             # 按端口批次扫描
             for port in self.ports:
-                self.scan_port_batch(ips, port, src_ip)
+                await self.scan_port_batch(ips, port, src_ip)
         finally:
-            self.stop_receiving.set()
-            for t in recv_threads:
-                t.join(timeout=1)
+            self.stop_receiving = True
+            await asyncio.sleep(0.5)
+            recv_task.cancel()
+            try:
+                await recv_task
+            except asyncio.CancelledError:
+                pass
             self.send_socket.close()
             self.recv_socket.close()
         
-        with self.buffer_lock:
-            self.flush_buffer()
+        if self.results_buffer:
+            await self.flush_buffer()
         
         self.merge_results()
         
@@ -375,6 +368,10 @@ class RawSocketSYNScanner:
             logger.info(f"平均速度: {self.scanned_count/total_time:.0f} 次/秒")
         logger.info(f"结果已保存到: {self.output_csv}")
         logger.info("=" * 60)
+    
+    def run(self):
+        """运行扫描器"""
+        asyncio.run(self.run_async())
 
 
 def main():
@@ -385,7 +382,7 @@ def main():
         sys.exit(1)
     
     script_dir = Path(__file__).parent
-    log_file = script_dir / 'tcp_syn_scan.log'
+    log_file = script_dir / 'async_tcp_syn_scan.log'
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
@@ -406,14 +403,13 @@ def main():
         logger.error(f"输入文件不存在: {input_csv}")
         sys.exit(1)
     
-    # send_workers=100: 100个发送线程 (原始socket很快，不需要太多)
-    # recv_workers=10: 10个接收线程
+    # concurrency=10000: 10000个异步并发
+    # batch_size=100: 批量写入100条
     # timeout=2.0: 等待2秒
-    scanner = RawSocketSYNScanner(
+    scanner = AsyncRawSocketScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        send_workers=100,
-        recv_workers=10,
+        concurrency=10000,
         batch_size=100,
         timeout=2.0
     )
@@ -423,3 +419,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
