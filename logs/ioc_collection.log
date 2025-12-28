@@ -512,3 +512,30 @@
 [2025-12-26 20:43:11] [INFO] [IOC_COLLECTOR]   emergingthreats: 4,522
 [2025-12-26 20:43:11] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,352
 [2025-12-26 20:43:11] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-28 20:44:03] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 19769 条记录
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] ============================================================
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] 总记录数: 1,870,775
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] 唯一IP数: 196,520
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] 数据源数: 15
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] history.csv: 231,815 条
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] recent.csv: 231,815 条
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   CyberCure: 571,950
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   NamePipes: 469,323
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   FireHOL: 260,749
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   ipsum: 180,934
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   cinsscore: 135,000
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   urlhaus: 115,764
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   greensnow: 42,548
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   alienvault: 30,422
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   Montysecurity: 23,313
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   Binarydefense: 16,442
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   threatview.io: 9,918
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 6,903
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   emergingthreats: 4,537
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   SNORT: 1,578
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,394
+[2025-12-28 20:45:03] [INFO] [IOC_COLLECTOR] ============================================================
