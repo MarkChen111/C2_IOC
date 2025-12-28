@@ -370,7 +370,7 @@ def main():
     scanner = ThreadedSYNScanner(
         input_csv=str(input_csv),
         output_csv=str(output_csv),
-        max_workers=5000,
+        max_workers=1000,
         batch_size=100,
         timeout=1.0
     )
