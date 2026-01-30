@@ -1403,3 +1403,30 @@
 [2026-01-29 20:49:06] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 3,374
 [2026-01-29 20:49:06] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,015
 [2026-01-29 20:49:06] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-01-30 20:47:11] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 18614 条记录
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] 总记录数: 2,308,203
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] 唯一IP数: 236,478
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] 数据源数: 15
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] history.csv: 367,863 条
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] recent.csv: 367,863 条
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   NamePipes: 789,009
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   CyberCure: 671,117
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   FireHOL: 272,151
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   ipsum: 183,696
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   cinsscore: 135,000
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   urlhaus: 88,732
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   greensnow: 45,930
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   alienvault: 35,953
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   Binarydefense: 31,318
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   Montysecurity: 21,729
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   SNORT: 14,137
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   threatview.io: 9,927
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   emergingthreats: 5,108
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 3,360
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,036
+[2026-01-30 20:48:16] [INFO] [IOC_COLLECTOR] ============================================================
