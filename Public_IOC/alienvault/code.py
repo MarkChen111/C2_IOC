@@ -2,6 +2,7 @@ import requests
 import time
 import sys
 import os
+import re
 from datetime import datetime
 
 # 尝试导入yaml
@@ -12,28 +13,80 @@ except ImportError:
     YAML_AVAILABLE = False
     print("[!] 警告: PyYAML未安装，使用默认配置")
 
+
+def _load_alienvault_config_without_yaml(config_file):
+    """在缺少 PyYAML 时，尽量从 config.yaml 解析 alienvault 配置。"""
+    if not os.path.exists(config_file):
+        return {}
+
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception:
+        return {}
+
+    config = {}
+    in_section = False
+
+    for raw_line in lines:
+        line = raw_line.rstrip("\n")
+        stripped = line.strip()
+
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        # 找到 alienvault 顶层段
+        if not in_section:
+            if re.match(r"^\s*alienvault\s*:\s*$", line):
+                in_section = True
+            continue
+
+        # 离开当前段（遇到新的顶层 key）
+        if not line.startswith(" ") and not line.startswith("\t"):
+            break
+
+        kv_match = re.match(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.+?)\s*$", line)
+        if not kv_match:
+            continue
+
+        key = kv_match.group(1)
+        value = kv_match.group(2).split("#", 1)[0].strip()
+        value = value.strip("'\"")
+
+        if key == "api_key":
+            config["api_key"] = value
+        elif key in {"days", "max_pages"}:
+            try:
+                config[key] = int(value)
+            except ValueError:
+                continue
+
+    return config
+
 # =========================
 # 加载配置
 # =========================
 def load_config():
     """从项目根目录的config.yaml加载配置"""
-    if not YAML_AVAILABLE:
-        return {}
-    
     # 获取项目根目录（向上两级）
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.dirname(os.path.dirname(script_dir))
     config_file = os.path.join(root_dir, "config.yaml")
-    
-    if os.path.exists(config_file):
+
+    if not os.path.exists(config_file):
+        return {}
+
+    if YAML_AVAILABLE:
         try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
-                return config.get('alienvault', {})
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f) or {}
+                return config.get("alienvault", {})
         except Exception as e:
             print(f"[!] 配置文件加载失败: {e}")
             return {}
-    return {}
+
+    # PyYAML 不可用时，走兜底解析
+    return _load_alienvault_config_without_yaml(config_file)
 
 CONFIG = load_config()
 
@@ -140,18 +193,16 @@ def main():
         try:
             r = requests.get(ACTIVITY_URL, headers=HEADERS, params=params, timeout=30)
             data = r.json()
-            print(data)
         except Exception as e:
             log(f"[ERROR] activity 接口异常: {e}")
             time.sleep(5)
             continue
 
         results = data.get("results", [])
+        log(f"[INFO] 正在处理第 {page + 1} 页，Pulse 数量: {len(results)}")
         if not results:
             log("[INFO] activity 无更多数据，结束")
             break
-
-        # log(f"[DEBUG] 正在处理第 {page + 1} 页，Pulse 数量: {len(results)}")
 
         stop_flag = False
 

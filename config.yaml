@@ -40,7 +40,6 @@ source_priority:
     - tweetfeed
     - Binarydefense
     - FireHOL
-    - CyberCure
   low:
     - ipsum
     - greensnow

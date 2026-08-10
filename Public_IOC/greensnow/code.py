@@ -1,5 +1,6 @@
 import os
 import csv
+import time
 import requests
 from datetime import datetime
 
@@ -22,8 +23,26 @@ save_path = os.path.join(SAVE_DIR, f"{today_str}.csv")
 # 2. 获取数据
 # =========================
 print("[+] 正在拉取 GreenSnow 数据...")
-resp = requests.get(GREENSNOW_URL, timeout=30)
-resp.raise_for_status()
+
+def get_with_retry(url, retries=4, timeout=30, backoff=2):
+    """请求失败时自动重试，降低临时 5xx 导致的采集失败。"""
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.RequestException as e:
+            last_error = e
+            if attempt == retries:
+                break
+            sleep_seconds = backoff ** (attempt - 1)
+            print(f"[!] 请求失败，第 {attempt}/{retries} 次：{e}，{sleep_seconds} 秒后重试...")
+            time.sleep(sleep_seconds)
+    raise last_error
+
+
+resp = get_with_retry(GREENSNOW_URL)
 
 # 按行分割文本
 lines = resp.text.splitlines()

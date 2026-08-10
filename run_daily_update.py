@@ -39,7 +39,6 @@ DATA_SOURCES = [
     "Binarydefense",
     "C2IntelFeeds",
     "cinsscore",
-    "CyberCure",
     "emergingthreats",
     "FireHOL",
     "greensnow",
@@ -63,19 +62,61 @@ def log(message, level="INFO"):
 
 def run_command(command, cwd=None, timeout=300):
     """运行命令并返回结果"""
+    process = None
     try:
-        result = subprocess.run(
+        process = subprocess.Popen(
             command,
             cwd=cwd,
             shell=True,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout
+            bufsize=1
         )
-        return result.returncode, result.stdout, result.stderr
+
+        stdout_lines = []
+        stderr_lines = []
+
+        # 实时输出子进程日志，避免长任务期间看起来“卡住”。
+        start_time = time.time()
+        while True:
+            if time.time() - start_time > timeout:
+                raise subprocess.TimeoutExpired(command, timeout)
+
+            stdout_line = process.stdout.readline()
+            if stdout_line:
+                clean = stdout_line.rstrip("\n")
+                stdout_lines.append(clean)
+                print(clean)
+
+            stderr_line = process.stderr.readline()
+            if stderr_line:
+                clean = stderr_line.rstrip("\n")
+                stderr_lines.append(clean)
+                print(clean, file=sys.stderr)
+
+            if process.poll() is not None:
+                break
+
+        # 读取剩余缓冲内容，避免丢日志。
+        remaining_stdout = process.stdout.read()
+        if remaining_stdout:
+            print(remaining_stdout, end="")
+            stdout_lines.extend(remaining_stdout.splitlines())
+
+        remaining_stderr = process.stderr.read()
+        if remaining_stderr:
+            print(remaining_stderr, end="", file=sys.stderr)
+            stderr_lines.extend(remaining_stderr.splitlines())
+
+        return process.returncode, "\n".join(stdout_lines), "\n".join(stderr_lines)
     except subprocess.TimeoutExpired:
+        if process and process.poll() is None:
+            process.kill()
         return -1, "", f"命令超时（{timeout}秒）"
     except Exception as e:
+        if process and process.poll() is None:
+            process.kill()
         return -1, "", str(e)
 
 
@@ -142,7 +183,7 @@ def combine_all_data():
 
 def check_output_files():
     """检查输出文件是否存在并显示信息"""
-    combine_dir = os.path.join(PUBLIC_IOC_DIR, "combine")
+    combine_dir = os.path.join(PUBLIC_IOC_DIR, "all_res_combine")
     history_file = os.path.join(combine_dir, "history.csv")
     recent_file = os.path.join(combine_dir, "recent.csv")
     

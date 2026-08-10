@@ -1619,3 +1619,105 @@
 [2026-02-06 20:42:33] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 3,038
 [2026-02-06 20:42:33] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,177
 [2026-02-06 20:42:33] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-03-14 17:22:20] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 19385 条记录
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] 总记录数: 2,292,768
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] 唯一IP数: 268,964
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] 数据源数: 15
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] history.csv: 419,066 条
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] recent.csv: 419,066 条
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   NamePipes: 781,353
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   CyberCure: 697,687
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   FireHOL: 275,700
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   ipsum: 166,727
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   cinsscore: 135,000
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   urlhaus: 83,300
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   alienvault: 40,922
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   greensnow: 39,238
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   Montysecurity: 21,808
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   Binarydefense: 20,564
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   SNORT: 12,626
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   threatview.io: 8,824
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   emergingthreats: 5,041
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 2,806
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR]   tweetfeed: 1,172
+[2026-03-14 17:25:01] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] 总记录数: 257,199
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] 唯一IP数: 211,577
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] 数据源数: 15
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] history.csv: 419,103 条
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] recent.csv: 319,918 条
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   CyberCure: 87,629
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   NamePipes: 82,178
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   FireHOL: 29,836
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   ipsum: 19,385
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   cinsscore: 15,000
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   urlhaus: 7,922
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   greensnow: 5,112
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   Binarydefense: 3,077
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   Montysecurity: 1,924
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   SNORT: 1,574
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   alienvault: 1,445
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   threatview.io: 1,178
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   emergingthreats: 662
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 146
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR]   tweetfeed: 131
+[2026-04-22 17:35:17] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-22 17:38:02] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 18468 条记录
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] 总记录数: 158,378
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] 唯一IP数: 132,316
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] 数据源数: 12
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] history.csv: 445,168 条
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] recent.csv: 346,489 条
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   NamePipes: 74,131
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   FireHOL: 32,646
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   ipsum: 18,468
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   cinsscore: 15,000
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   urlhaus: 7,955
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   Binarydefense: 5,370
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   SNORT: 1,530
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   alienvault: 1,445
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   threatview.io: 1,178
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   emergingthreats: 339
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 162
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR]   tweetfeed: 154
+[2026-04-22 17:40:18] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-23 00:14:20] [INFO] [IOC_COLLECTOR] [ipsum] 采集成功 - 获取 18468 条记录
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] ============================================================
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] 数据合并统计
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] 总记录数: 331,167
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] 唯一IP数: 137,914
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] 数据源数: 13
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] history.csv: 448,347 条
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] recent.csv: 346,786 条
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] ------------------------------------------------------------
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] 各数据源贡献:
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   NamePipes: 148,276
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   FireHOL: 65,292
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   ipsum: 36,936
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   cinsscore: 30,000
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   urlhaus: 15,963
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   Binarydefense: 10,740
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   greensnow: 9,535
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   alienvault: 7,690
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   SNORT: 3,060
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   threatview.io: 2,356
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   emergingthreats: 678
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   C2IntelFeeds: 327
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR]   tweetfeed: 314
+[2026-04-23 00:19:35] [INFO] [IOC_COLLECTOR] ============================================================

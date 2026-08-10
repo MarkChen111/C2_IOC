@@ -22,7 +22,7 @@ save_path = os.path.join(SAVE_DIR, f"{today_str}.csv")
 # 2. 获取数据
 # =========================
 print("[+] 正在拉取 ThreatView.io 数据...")
-resp = requests.get(THREATVIEW_URL, timeout=30)
+resp = requests.get(THREATVIEW_URL, timeout=120)
 resp.raise_for_status()
 
 # 按行分割文本

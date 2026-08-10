@@ -114,13 +114,6 @@ SOURCE_MAPPING = {
         "port_field": None,
         "delimiter": ","
     },
-    "CyberCure": {
-        "ip_field": "ip",
-        "time_field": None,
-        "tag_field": None,
-        "port_field": None,
-        "delimiter": ","
-    },
     "emergingthreats": {
         "ip_field": "ip",
         "time_field": None,
