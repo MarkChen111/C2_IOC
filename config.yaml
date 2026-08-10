@@ -36,6 +36,7 @@ source_priority:
     - emergingthreats
   medium:
     - Montysecurity
+    - maltrail
     - threatview.io
     - tweetfeed
     - Binarydefense

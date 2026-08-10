@@ -142,6 +142,13 @@ SOURCE_MAPPING = {
         "port_field": None,
         "delimiter": ","
     },
+    "maltrail": {
+        "ip_field": "ip",
+        "time_field": None,
+        "tag_field": "tag",
+        "port_field": "port",
+        "delimiter": ","
+    },
     "Montysecurity": {
         "ip_field": "ip",
         "time_field": None,

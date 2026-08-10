@@ -43,6 +43,7 @@ DATA_SOURCES = [
     "FireHOL",
     "greensnow",
     "ipsum",
+    "maltrail",
     "Montysecurity",
     "NamePipes",
     "SNORT",
